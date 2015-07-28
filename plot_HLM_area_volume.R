@@ -19,7 +19,7 @@ polyval <- function(coefs, x){
 }
 
 
-j = 1; ################################################## volcano index
+j = 4; ################################################## volcano index
 x = alldata[[j]][,1]
 y = alldata[[j]][,2]
 n = 10

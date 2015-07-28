@@ -221,11 +221,11 @@ sj2.lst = sj2.lst[-(1:burn),];
 
 
 # save samples
-write.table(thetas1,file='results/thetas1.Rdata',row.names=F,sep=',')
-write.table(thetas2,file='results/thetas2.Rdata',row.names=F,sep=',')
-write.table(sj2.lst,file='results/sj2_lst.Rdata',row.names=F,sep=',')
-write.table(mus,file='results/mus.Rdata',row.names=F,sep=',')
-write.table(st2.lst,file='results/st2_lst.Rdata',row.names=F,sep=',')
+write.table(thetas1,file='results/thetas1_bv.Rdata',row.names=F,sep=',')
+write.table(thetas2,file='results/thetas2_bv.Rdata',row.names=F,sep=',')
+write.table(sj2.lst,file='results/sj2_lst_bv.Rdata',row.names=F,sep=',')
+write.table(mus,file='results/mus_bv.Rdata',row.names=F,sep=',')
+write.table(st2.lst,file='results/st2_lst_bv.Rdata',row.names=F,sep=',')
 
 
 
