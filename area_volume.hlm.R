@@ -1,21 +1,19 @@
-# Version 5 of the hierarchical model. Coeficient of Friction vs Volume
+# Version 5 of the hierarchical model for area vs volume
 # Colima, and Merapi are unchanneled, whereas shv, unzen and smr are 
 # channeled
 
 
 # Read in data files.
-# These are log10 values.
-clm = read.table('Clm_Vol_CoefFriction.txt',header=0);
-mrp = read.table('Mrp_Vol_CoefFriction.txt',header=0);
-shv = read.table('Shv_Vol_CoefFriction.txt',header=0);
-unz = read.table('Unz_Vol_CoefFriction.txt',header=0);
-smr = read.table('Smr_Vol_CoefFriction.txt',header=0);
-alldata = list(clm=clm,mrp=mrp,shv=shv,unz=unz,smr=smr);
+clm = read.table('Clm_Vol_area.txt',header=F);
+mrp = read.table('Mrp_Vol_area.txt',header=F);
+shv = read.table('Shv_Vol_area.txt',header=F);
+unz = read.table('Unz_Vol_area.txt',header=F);
+aug = read.table('Aug_Vol_area.txt',header=F);
+alldata = list(clm=clm,mrp=mrp,shv=shv,unz=unz,aug=aug);
 
-fnames= c('clm','mrp','shv','unz','smr');
+fnames= c('clm','mrp','shv','unz','aug');
 snames = names(alldata);
 nvolc = length(alldata);
-mid = 10^5.5;
 
 polys = data.frame(matrix(nrow=2,ncol=5));
 colnames(polys) = snames;
@@ -23,15 +21,15 @@ njs = rep(0,nvolc);
 xj = rep(0,nvolc);
 svar = rep(0,nvolc);
 for (i in 1:nvolc){
-  alldata[[i]][,2] = alldata[[i]][,2] * 1e6;
-  alldata[[i]][,2] = alldata[[i]][,2]/mid;
+  alldata[[i]][,1] = alldata[[i]][,1]/1000;
+  alldata[[i]][,1] = alldata[[i]][,1]^(2/3);
   alldata[[i]] = log10(alldata[[i]]);
   
-  linm = lm(alldata[[i]][,1]~alldata[[i]][,2]);
+  linm = lm(alldata[[i]][,2]~alldata[[i]][,1]);
   polys[i] = linm$coefficients;
   njs[i] = length(alldata[[i]][,1]);
-  xj[i] = mean(alldata[[i]][,2]);
-  svar[i] = sum((alldata[[i]][,2] - xj[i])^2);
+  xj[i] = mean(alldata[[i]][,1]);
+  svar[i] = sum((alldata[[i]][,1] - xj[i])^2);
 }
 
 
@@ -54,7 +52,7 @@ t2 = as.numeric(polys[2,]);
 thetas1[1,] = t1;
 thetas2[1,] = t2;
 mus[1] = mean(t2);
-sj2init = lapply(alldata,function(x) var(x[,2]));
+sj2init = lapply(alldata,function(x) var(x[,1]));
 
 sj2.lst[1,] = as.numeric(sj2init);
 st2.lst[1] = var(t2);
@@ -101,7 +99,7 @@ for (ns in 1:(nsamples-1)){
   m2 = t2 - (t2 - mus[k])/(1 + lamtemp * svar);
   s21 = (sj2.lst[k,] * lamtemp)/(1 + lamtemp * svar);
   thetas2[k+1,] = mv.rnorm(as.numeric(m2),as.numeric(sqrt(s21)));
- 
+  
   ##############################################################
   
   # Step 2: Draw th1
@@ -109,7 +107,7 @@ for (ns in 1:(nsamples-1)){
   s22 = sj2.lst[k,]/njs;
   thetas1[k+1,] = mv.rnorm(as.numeric(m1),as.numeric(sqrt(s22)));
   
- ############################################################## 
+  ############################################################## 
   
   # Step 3A: Draw sig2.u
   cu = 0;
@@ -117,8 +115,8 @@ for (ns in 1:(nsamples-1)){
   while (found.u != 1){
     btmp = 0;
     for (i in 1:2){
-      xji = alldata[[i]][,2];
-      yji = alldata[[i]][,1];
+      xji = alldata[[i]][,1];
+      yji = alldata[[i]][,2];
       btmp = btmp + sum((yji - (thetas1[k+1,i] + 
                                   thetas2[k+1,i]*xji))^2);
     }
@@ -137,9 +135,9 @@ for (ns in 1:(nsamples-1)){
     }
     cu = cu + 1;
   }
-
+  
   ##############################################################
-
+  
   # STEP 3B: Draw sig2.c
   cc = 0;
   found.c = 0;
@@ -147,8 +145,8 @@ for (ns in 1:(nsamples-1)){
   while (found.c != 1){
     btmp = 0;
     for (i in 3:nvolc){
-      xji = alldata[[i]][,2];
-      yji = alldata[[i]][,1];
+      xji = alldata[[i]][,1];
+      yji = alldata[[i]][,2];
       btmp = btmp + sum((yji - (thetas1[k+1,i] + 
                                   thetas2[k+1,i]*xji))^2);
     }
@@ -176,7 +174,7 @@ for (ns in 1:(nsamples-1)){
   }
   
   ##############################################################
-
+  
   # STEP 4: Draw mu
   vs = vj.func(sj2.lst[k+1,], st2.lst[k],svar);
   ms = mu.hat.func(as.numeric(thetas2[k+1,]),
@@ -185,7 +183,7 @@ for (ns in 1:(nsamples-1)){
   mus[k+1] = rnorm(n=1,mean=ms,sd=sqrt(1/sum(1/vs)));
   
   ##############################################################
-
+  
   #STEP 5: Generate sig.t2
   beta = 0.5*sum((thetas2[k+1,] - mus[k+1])^2);
   sig.t2.cand = 1/rgamma(n=1,shape=(nvolc-2)/2,scale=1/beta);
@@ -193,7 +191,7 @@ for (ns in 1:(nsamples-1)){
   
   ut = runif(1);
   condt = sqrt(sum(1/vj.func(as.numeric(sj2.lst[k+1,]),sig.t2.cand,svar)^2))/
-          sqrt(sum(1/vj.func(as.numeric(sj2.lst[k+1,]),0,svar)^2));
+    sqrt(sum(1/vj.func(as.numeric(sj2.lst[k+1,]),0,svar)^2));
   
   ct = 0;
   while (ut < condt){
@@ -203,7 +201,7 @@ for (ns in 1:(nsamples-1)){
     
     ut = runif(1);
     condt = sqrt(sum(1/vj.func(as.numeric(sj2.lst[k+1,]),sig.t2.cand,svar)^2))/
-            sqrt(sum(1/vj.func(as.numeric(sj2.lst[k+1,]),0,svar)^2));
+      sqrt(sum(1/vj.func(as.numeric(sj2.lst[k+1,]),0,svar)^2));
     ct = ct + 1;
   }
   st2.lst[k+1] = sig.t2.cand;
@@ -221,11 +219,11 @@ sj2.lst = sj2.lst[-(1:burn),];
 
 
 # save samples
-write.table(thetas1,file='results/thetas1.Rdata',row.names=F,sep=',')
-write.table(thetas2,file='results/thetas2.Rdata',row.names=F,sep=',')
-write.table(sj2.lst,file='results/sj2_lst.Rdata',row.names=F,sep=',')
-write.table(mus,file='results/mus.Rdata',row.names=F,sep=',')
-write.table(st2.lst,file='results/st2_lst.Rdata',row.names=F,sep=',')
+write.table(thetas1,file='results/thetas1_av.Rdata',row.names=F,sep=',')
+write.table(thetas2,file='results/thetas2_av.Rdata',row.names=F,sep=',')
+write.table(sj2.lst,file='results/sj2_lst_av.Rdata',row.names=F,sep=',')
+write.table(mus,file='results/mus_av.Rdata',row.names=F,sep=',')
+write.table(st2.lst,file='results/st2_lst_av.Rdata',row.names=F,sep=',')
 
 
 
