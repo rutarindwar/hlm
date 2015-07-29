@@ -1,4 +1,4 @@
-# HLM for coef friction vs volume
+# HLM for area vs volume
 
 from numpy import *
 import time
@@ -6,32 +6,30 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 # load data
-clm = recfromtxt('Clm_Vol_CoefFriction.txt');
-mrp = recfromtxt('Mrp_Vol_CoefFriction.txt');
-shv = recfromtxt('Shv_Vol_CoefFriction.txt');
-unz = recfromtxt('Unz_Vol_CoefFriction.txt');
-smr = recfromtxt('Smr_Vol_CoefFriction.txt');
-alldata = [clm,mrp,shv,unz,smr]
+clm = recfromtxt('Clm_Vol_area.txt');
+mrp = recfromtxt('Mrp_Vol_area.txt');
+shv = recfromtxt('Shv_Vol_area.txt');
+unz = recfromtxt('Unz_Vol_area.txt');
+aug = recfromtxt('Aug_Vol_area.txt');
+alldata = [clm,mrp,shv,unz,aug]
 
-name = ['Clm','Mrp', 'SHV','Unz','Smr']
+name = ['Clm','Mrp', 'SHV','Unz','Aug']
 nvolc = len(alldata)
-
-mid = 10**5.5
 polys = zeros([nvolc,2])
 njs = zeros([nvolc,1])
 xj = zeros([nvolc,1])
 Sj_lst = zeros([nvolc,1])
 
-# Data manipulation: remember col1 = y, col2 = y
+# Data manipulation: Remember col1 = x, col2 = y
 for i in range(nvolc):
-    alldata[i][:,1] = alldata[i][:,1] * 10**6
-    alldata[i][:,1] = alldata[i][:,1]/mid
+    alldata[i][:,0] = alldata[i][:,0]/1000 # change to km^3
+    alldata[i][:,0] = alldata[i][:,0]**(2.0/3)
     alldata[i] = log10(alldata[i])
     
-    polys[i,:] = polyfit(alldata[i][:,1], alldata[i][:,0],1)
+    polys[i,:] = polyfit(alldata[i][:,0], alldata[i][:,1],1)
     njs[i] = shape(alldata[i])[0]
-    xj[i] = mean(alldata[i][:,1])
-    Sj_lst[i] = sum((alldata[i][:,1] - xj[i])**2)
+    xj[i] = mean(alldata[i][:,0])
+    Sj_lst[i] = sum((alldata[i][:,0] - xj[i])**2)
 
 Sj_lst = squeeze(Sj_lst)
 njs = squeeze(njs)
@@ -56,7 +54,7 @@ t2 = polys[:,0]
 thetas1[:,0] = squeeze(t1)
 thetas2[:,0] = squeeze(t2)
 mus[0] = mean(t2)
-sigj2init = map(lambda x: var(x[:,1],ddof=1),alldata)
+sigj2init = map(lambda x: var(x[:,0],ddof=1),alldata)
 sj2_lst[:,0] = sigj2init
 st2_lst[0] = var(t2,ddof=1)
 
@@ -72,6 +70,8 @@ mu_hat_func = lambda t2j, s_j2,s_t2,Sj_part: \
 
 tic = time.time()
 q = nsamples/10
+
+foo = zeros([nsamples,2])
 for k in range(0,nsamples-1):
     
     # progress report
@@ -101,8 +101,8 @@ for k in range(0,nsamples-1):
     while (found_u != 1):
         btmp = 0
         for i in range(2):
-            xji = alldata[i][:,1]
-            yji = alldata[i][:,0]
+            xji = alldata[i][:,0]
+            yji = alldata[i][:,1]
             btmp = btmp + sum((yji-(thetas1[i,k+1] + xji*thetas2[i,k+1]))**2)
 
         betau = 0.5*btmp
@@ -127,8 +127,8 @@ for k in range(0,nsamples-1):
     while (found_c != 1):
         btmp = 0
         for i in range(2,nvolc): #i=3:nvolc
-            xji = alldata[i][:,1]
-            yji = alldata[i][:,0]
+            xji = alldata[i][:,0]
+            yji = alldata[i][:,1]
             btmp = btmp + sum((yji-(thetas1[i,k+1]+xji*thetas2[i,k+1]))**2)
 
         betac = 0.5*btmp
@@ -146,6 +146,10 @@ for k in range(0,nsamples-1):
         
         cc = cc + 1
 
+
+    foo[k,0] = cu
+    foo[k,1] = cc
+    
     for i in range(2):
         sj2_lst[i,k+1] = s2_u
     for i in range(2,5):
@@ -217,7 +221,7 @@ plt.legend()
 
 
 
-####################################################################
+#####################################################################
 
 n = 10;
 
@@ -229,9 +233,9 @@ for j in range(nvolc):#j = 1 ###################### volcano index
 
     plt.subplot(3,2,figind)
     figind += 1
-    x = alldata[j][:,1]
-    y = alldata[j][:,0]
-    vv = linspace(-1.5, 2.5, n);
+    x = alldata[j][:,0]
+    y = alldata[j][:,1]
+    vv = linspace(-3.2, -1, n);
 
     p975 = zeros([n,1]);
     p25 = zeros([n,1]);
@@ -269,8 +273,8 @@ for j in range(nvolc):#j = 1 ###################### volcano index
     plt.plot(vv,topy, 'k:', label='LR - CI')
     plt.plot(vv,boty, 'k:')
     plt.plot(vv,polyval(p,vv), 'k-',label='LR')
-    plt.xlim([-1.5,2.5])
-    plt.ylim([-3,3])
+    plt.xlim([-3.2,-1])
+    plt.ylim([-2.5,2])
     plt.title(name[j])
 
 
