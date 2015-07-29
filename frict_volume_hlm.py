@@ -2,6 +2,8 @@
 
 from numpy import *
 import time
+import matplotlib.pyplot as plt
+from scipy import stats
 
 # load data
 clm = recfromtxt('Clm_Vol_CoefFriction.txt');
@@ -195,19 +197,80 @@ sj2_lst = sj2_lst[:,burn:]
 
 
 
+plt.figure(1)
+plt.clf()
+for i in range(nvolc):
+    plt.hist(thetas1[i,:], bins=100, histtype='stepfilled', normed=True,\
+            alpha=0.5, label=name[i])
+plt.title('Theta1')
+plt.legend()
 
 
 
+plt.figure(2)
+plt.clf()
+for i in range(nvolc):
+    plt.hist(thetas2[i,:], bins=100, histtype='stepfilled', normed=True,\
+            alpha=0.5, label=name[i])
+plt.title('Theta2')
+plt.legend()
 
 
 
+####################################################################
 
+n = 10;
 
+plt.figure(3)
+plt.clf()
+figind = 1
 
+for j in range(nvolc):#j = 1 ###################### volcano index
 
+    plt.subplot(3,2,figind)
+    figind += 1
+    x = alldata[j][:,1]
+    y = alldata[j][:,0]
+    vv = linspace(-1.5, 2.5, n);
 
+    p975 = zeros([n,1]);
+    p25 = zeros([n,1]);
+    p50 = zeros([n,1]);
+    fvv = zeros([n,1]);
+    
+    for i in range(n):
+        cf = thetas2[j,:] * vv[i] + thetas1[j,:]
+        p25[i] = prctile(cf,p=2.5)
+        p50[i] = prctile(cf,p=50)
+        p975[i] = prctile(cf,p=97.5)
 
+    nn = len(x)
+    p = polyfit(x,y,1)
+    sxx = sum((x - mean(x))**2)
+    yihat = polyval(p,x)
+    seps2 = sum((y - yihat)**2)/(nn-2)
+    
+    topy = zeros([n,1])
+    boty = zeros([n,1])
+    
+    for i in range(n):
+        val = stats.t.ppf(0.975,nn) * sqrt(seps2) * \
+                sqrt((1/nn) + ((vv[i] - mean(x))**2/sxx));
+        topy[i] = polyval(p,vv[i]) + val;
+        boty[i] = polyval(p,vv[i]) - val;
+    
+    
+    
 
+    plt.plot(x,y,'bo',ms=5,label='data')
+    plt.plot(vv,p25,'r--', label='HLM - CI')
+    plt.plot(vv,p975,'r--')
+    plt.plot(vv,p50,'r-',label='HLM - Mean')
+    plt.plot(vv,topy, 'k:', label='LR - CI')
+    plt.plot(vv,boty, 'k:')
+    plt.xlim([-1.5,2.5])
+    plt.ylim([-3,3])
+    plt.title(name[j])
 
 
 
