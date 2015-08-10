@@ -210,7 +210,6 @@ plt.title('Theta1')
 plt.legend()
 
 
-
 plt.figure(2)
 plt.clf()
 for i in range(nvolc):
@@ -244,9 +243,9 @@ for j in range(nvolc):#j = 1 ###################### volcano index
     
     for i in range(n):
         cf = thetas2[j,:] * vv[i] + thetas1[j,:]
-        p25[i] = prctile(cf,p=2.5)
-        p50[i] = prctile(cf,p=50)
-        p975[i] = prctile(cf,p=97.5)
+        p25[i] = percentile(cf,2.5)
+        p50[i] = percentile(cf,50)
+        p975[i] = percentile(cf,97.5)
 
     nn = len(x)
     p = polyfit(x,y,1)
@@ -277,7 +276,7 @@ for j in range(nvolc):#j = 1 ###################### volcano index
     plt.ylim([-2.5,2])
     plt.title(name[j])
 
-
+plt.show()
 
 
 
